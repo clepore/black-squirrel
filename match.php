@@ -3,7 +3,7 @@
 <?php
 
 if ($argc != 3 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
-  echo "REQUIRES 3 INPUTS!!!\n";
+  echo "REQUIRES 2 INPUTS!!!\n";
   die();
 }
 
@@ -11,10 +11,15 @@ $lines = split("\n", file_get_contents($argv[1], "r"));
 $patterns = array();
 $tests = array();
 
-// Separate the patterns
+// Separate the patterns indexed by length
 $p_len = (int) $lines[0];
-for ($i=1; $i <= $p_len; $i++) { 
-  $patterns[] = $lines[$i];
+for ($i=1; $i <= $p_len; $i++) {
+  $exp = explode(',', $lines[$i]);
+  $patterns[count($exp)][] = $lines[$i];
+}
+
+foreach ($patterns  as &$p) {
+  usort(&$p, 'cmp');
 }
 
 // Separate the tests
@@ -27,41 +32,53 @@ for ($i=$t_start+1; $i <= count($lines)-1; $i++) {
 
 foreach ($tests as $test) {
 
-  $results = array();
+  $result = "\n".$test." = NO MATCH";
 
-  $t_arr = explode('/', $test);
+  $pieces = explode('/', $test);
 
-  foreach ($patterns as $p) {
-    $p_arr = explode(',', $p);
+  $len = count($pieces);
 
-    if (count($t_arr) === count($p_arr)) {
+  if (isset($patterns[$len])) {
 
-      for ($i=0; $i < count($t_arr); $i++) {
+    $arr = $patterns[$len];
 
+    foreach ($arr as $p) {
+      $p_arr = explode(',',$p);
+
+      for ($i = 0; $i < $len; $i++) {
         // Compare non-* characters
-        if ($p_arr[$i] !== '*' && $p_arr[$i] !== $t_arr[$i]) {
+        if ($p_arr[$i] !== '*' && $p_arr[$i] !== $pieces[$i]) {
           break;
         }
-
-        // If the whole loop succeeds, add the pattern to success results
-        if ($i === count($t_arr) - 1) {
-          $results[] = $p;
-        }
-
       }
 
+      if ($i === $len) {
+        $result = "\n".$test.' = ' .$p;
+        break;
+      } 
     }
-
   }
-  if (count($results) === 0) {
-    echo "\n".$test." = NO MATCH\n\n";
+  echo $result;
+}
+
+function cmp($a, $b) {
+  $amtA = substr_count($a, '*');
+  $amtB = substr_count($b, '*');
+
+  if ($amtA === $amtB) { // Have the same number of *'s
+    $posA = strpos($a, '*');
+    $posB = strpos($b, '*');
+
+    if ($posA === $posB) { // Have the * in the same position
+      return cmp(substr($a, $posA + 1), substr($b, $posB + 1));
+    
+    } else {
+      return ($posA > $posB) ? -1 : 1;
+    }
+  
   } else {
-    foreach ($results as $r) {
-      echo $test." = ".$r."\n";
-    }
-    echo "\n";
+    return ($amtA < $amtB) ? -1 : 1;
   }
-
 }
 
 

@@ -38,8 +38,8 @@ foreach ($tests as $test) {
 
     $pat = $patterns[$len];
 
-    foreach ($pat as $p) {
-      $p_arr = explode(',',$p);
+    foreach ($pat as $pa) {
+      $p_arr = explode(',',$pa);
 
       for ($i = 0; $i < $len; $i++) {
         // Compare non-* characters
@@ -49,7 +49,7 @@ foreach ($tests as $test) {
       }
 
       if ($i === $len) {
-        $result = $p;
+        $result = $pa;
         break;
       } 
     }
@@ -58,7 +58,7 @@ foreach ($tests as $test) {
 }
 
 // Write contents to output file
-file_put_contents($argv[2], implode("\n", $out));
+file_put_contents($argv[2], implode("\n", $out)."\n");
 
 
 
@@ -72,6 +72,10 @@ function cmp($a, $b) {
   if ($amtA === $amtB) { // Have the same amount of *'s
     $posA = strpos($a, '*');
     $posB = strpos($b, '*');
+
+    if ($postA === false && $postB === false) {
+      return 0;
+    }
 
     if ($posA === $posB) { // Have the same index for *
       return cmp(substr($a, $posA + 1), substr($b, $posB + 1));
